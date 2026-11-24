@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Space Coast Flood Hot Spots</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#151b23; --panel2:#1c2430; --line:#2a3441;
+    --text:#e6edf3; --muted:#8b98a8; --accent:#4cc2ff;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  #app{display:flex;height:100%}
+  #side{width:350px;min-width:350px;background:var(--panel);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;overflow:hidden;transition:margin .2s}
+  #side.hidden{margin-left:-350px}
+  #map{flex:1;height:100%}
+  header{padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+  header h1{font-size:16px;margin:0 0 2px;letter-spacing:.2px}
+  header .sub{color:var(--muted);font-size:12px}
+  .scroll{overflow-y:auto;flex:1;padding:4px 16px 16px}
+  .sec{padding:12px 0;border-bottom:1px solid var(--line)}
+  .sec:last-child{border-bottom:none}
+  .sec h2{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:0 0 8px;font-weight:600}
+  .big{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .big .val{font:600 30px/1 var(--mono);color:var(--accent)}
+  .big .unit{color:var(--muted)}
+  .big .dur{font:600 20px/1 var(--mono);color:var(--text)}
+  input[type=range]{width:100%;accent-color:var(--accent);margin:8px 0 2px}
+  .ticks{display:flex;justify-content:space-between;font:11px var(--mono);color:var(--muted)}
+  .row{display:flex;gap:8px;align-items:center;margin:6px 0}
+  .row label{flex:0 0 74px;color:var(--muted);font-size:12px}
+  select{flex:1;background:var(--panel2);color:var(--text);border:1px solid var(--line);
+    border-radius:6px;padding:5px 6px;font:inherit;font-size:13px}
+  .seg{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:6px;overflow:hidden;width:100%}
+  .seg button{background:var(--panel2);color:var(--muted);border:none;padding:7px 0;
+    font:12px var(--mono);cursor:pointer;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .seg button:nth-child(4n){border-right:none}
+  .seg button:nth-child(n+5){border-bottom:none}
+  .seg button.on{background:#20384a;color:var(--text)}
+  .chk{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px;cursor:pointer}
+  .chk input{accent-color:var(--accent)}
+  .stat{font-size:13px;color:var(--muted);margin-top:8px}
+  .stat b{color:var(--text);font-family:var(--mono)}
+  #list{list-style:none;margin:0;padding:0}
+  #list li{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:center;
+    padding:7px 6px;border-radius:6px;cursor:pointer}
+  #list li:hover{background:var(--panel2)}
+  #list .dot{width:12px;height:12px;border-radius:50%;border:1px solid #0008}
+  #list .nm{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #list .nm small{display:block;color:var(--muted);font-size:11px}
+  #list .tr{font:12px var(--mono);text-align:right;color:var(--text)}
+  .legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:4px}
+  .legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .note{font-size:11.5px;color:var(--muted);line-height:1.45}
+  .note a{color:var(--accent)}
+  #toggle{position:absolute;z-index:1000;top:10px;left:56px;display:none;
+    background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;
+    padding:6px 10px;cursor:pointer;font:inherit}
+  #toggle.show{display:block}
+  #msg{position:absolute;z-index:1000;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px 22px;
+    max-width:420px;display:none;text-align:center}
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel);color:var(--text);border:1px solid var(--line)}
+  .leaflet-popup-content{margin:10px 12px;font-size:12.5px;max-height:380px;overflow-y:auto;min-width:300px}
+  .leaflet-container a.leaflet-popup-close-button{color:var(--muted)}
+  .pp h3{margin:0 0 4px;font-size:14px}
+  .pp .meta{color:var(--muted);font-size:11.5px;margin-bottom:6px}
+  .pp table{border-collapse:collapse;font:11px var(--mono);margin:4px 0 6px;width:100%}
+  .pp td,.pp th{padding:2px 3px;text-align:right}
+  .pp th{color:var(--muted);font-weight:500}
+  .pp td:first-child,.pp th:first-child{text-align:left}
+  .pp td.hit{background:#7a00124d;color:#fff;border-radius:3px}
+  .pp th.cur,.pp td.cur{outline:1px solid var(--accent);outline-offset:-1px}
+  .pp .rep{border-top:1px solid var(--line);padding-top:6px;margin-top:6px}
+  .pp .rm{color:#c9d4df;font-size:12px}
+  .lbl{background:transparent;border:none;box-shadow:none;color:#fff;font:600 11px system-ui;
+    text-shadow:0 0 3px #000,0 0 3px #000;white-space:nowrap}
+  .lbl:before{display:none}
+  .leaflet-container{background:#0b0f14}
+  @media (max-width:720px){
+    #side{position:absolute;z-index:1001;height:100%;width:88vw;min-width:0}
+    #side.hidden{margin-left:-90vw}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <header>
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <div>
+          <h1>Space Coast Flood Hot Spots</h1>
+          <div class="sub">CCSFS · KSC · Patrick SFB · Merritt Island · Brevard · Stage IV 2002–present</div>
+        </div>
+        <button id="hide" title="Hide panel" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">«</button>
+      </div>
+    </header>
+    <div class="scroll">
+      <div class="sec">
+        <h2>If this much rain falls…</h2>
+        <div class="big"><span class="val" id="thVal">4.0</span><span class="unit">in</span>
+          <span class="unit">within</span><span class="dur" id="durVal">3 h</span></div>
+        <input id="th" type="range" min="0" max="10" step="0.1" value="4">
+        <div class="ticks" id="ticks"></div>
+        <div class="row" style="margin-top:10px"><label>Duration</label>
+          <div class="seg" id="dur"></div>
+        </div>
+        <div class="stat" id="stat">Loading…</div>
+      </div>
+
+      <div class="sec">
+        <h2>Rainfall definition</h2>
+        <div class="row"><label>Grid value</label>
+          <select id="cell">
+            <option value="nb">Max within ~6 km of report</option>
+            <option value="pt">Nearest Stage IV cell</option>
+          </select>
+        </div>
+        <div class="row"><label>Years</label>
+          <select id="y0"></select><span style="color:var(--muted)">–</span><select id="y1"></select>
+        </div>
+        <div class="row"><label>Spot radius</label>
+          <select id="rad">
+            <option value="0.25">250 m</option>
+            <option value="0.5" selected>500 m</option>
+            <option value="1">1 km</option>
+            <option value="2">2 km</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h2>Layers</h2>
+        <label class="chk"><input type="checkbox" id="lHeat" checked> Heat map (flooding at ≤ threshold)</label>
+        <label class="chk"><input type="checkbox" id="lSpots" checked> Hot spots (colored by trigger)</label>
+        <label class="chk"><input type="checkbox" id="lAbove"> Spots needing more rain (hollow)</label>
+        <label class="chk"><input type="checkbox" id="lUnk"> Spots without Stage IV data (gray)</label>
+        <label class="chk"><input type="checkbox" id="lObs"> Observed heavy-rain totals (LSR)</label>
+        <label class="chk"><input type="checkbox" id="lBase" checked> Installation labels</label>
+        <div class="legend" id="legend" style="margin-top:8px"></div>
+        <div class="note" style="margin-top:8px">Tip: click anywhere on the map to check nearby spots for the current duration.</div>
+      </div>
+
+      <div class="sec">
+        <h2>Hot spots active at this threshold</h2>
+        <ul id="list"></ul>
+      </div>
+
+      <div class="sec note">
+        <b>How to read this.</b> Each hot spot is a cluster of NWS flood / flash-flood reports.
+        For each report, the build finds the <b>peak</b> Stage IV accumulation for each duration
+        (1–72 h) over windows ending between 12 h before the report and 2 h after it.
+        A spot's <i>trigger</i> for a duration is the <b>lowest</b> peak that has produced a flood
+        report there. The spot lights up when the threshold is at or above its trigger, meaning
+        "this much rain in this time has flooded here before".
+        <br><br>
+        <b>Caveats.</b> Reports only exist where flooding was seen and reported, so the secured
+        interiors of CCSFS and KSC are under-sampled. Stage IV is about 4.7 km. Hourly fields get
+        less RFC QC than the 6-hourly ones; 48/72 h use 6-hourly files, and values marked † fell back
+        to 6-hourly because of gaps in the hourly data. There's no record of heavy rain that
+        <i>didn't</i> flood a spot, so each trigger is an upper bound on the true threshold. For
+        short durations the peak 1–3 h burst may not be what caused flooding that came after
+        a long soak. Tropical events can mix lagoon or surge water with rainfall flooding.
+        <br><br>
+        Data: <a href="https://mesonet.agron.iastate.edu/lsr/" target="_blank">IEM LSR archive</a>,
+        <a href="https://www.ncdc.noaa.gov/stormevents/" target="_blank">NCEI Storm Events</a>,
+        NCEP Stage IV via <a href="https://mesonet.agron.iastate.edu/" target="_blank">IEM</a>.
+        <span id="gen"></span>
+      </div>
+    </div>
+  </aside>
+  <button id="toggle">☰ Controls</button>
+  <div id="map"></div>
+  <div id="msg"></div>
+</div>
+
+<script>
+// ---------------------------------------------------------------- config
+let DURS = [1,2,3,6,12,24,48,72];
+const SLIDER_MAX = {1:5, 2:7, 3:8, 6:10, 12:14, 24:18, 48:24, 72:30};
+// trigger colors are relative to the current threshold: how far below it the spot floods
+const BINS = [
+  {f:0.25, c:'#7a0012', l:'≤25%'},
+  {f:0.5,  c:'#d7191c', l:'25–50%'},
+  {f:0.75, c:'#f46d43', l:'50–75%'},
+  {f:1.0,  c:'#fdae61', l:'75–100%'},
+];
+const ABOVE = '#6aa9d6', GRAY = '#7d8896';
+function colorFor(v){
+  if (v == null) return GRAY;
+  if (v > S.th) return ABOVE;
+  const f = S.th > 0 ? v / S.th : 0;
+  return BINS.find(b => f <= b.f).c;
+}
+
+const SITES = [
+  {n:'Cape Canaveral SFS', ll:[28.4889,-80.5778]},
+  {n:'KSC Industrial Area', ll:[28.5244,-80.6508]},
+  {n:'LC-39A', ll:[28.6082,-80.6041]},
+  {n:'Patrick SFB', ll:[28.2350,-80.6100]},
+  {n:'Merritt Island', ll:[28.3584,-80.6823]},
+  {n:'Cocoa Beach', ll:[28.3200,-80.6076]},
+  {n:'Titusville', ll:[28.6122,-80.8076]},
+];
+
+const S = {th:4, di:2, cell:'nb', y0:null, y1:null, rad:0.5};
+let DATA = null, spots = [];
+
+// ---------------------------------------------------------------- map
+const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([28.42,-80.66], 11);
+const base = {
+  'Dark': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    {maxZoom:19, attribution:'&copy; OpenStreetMap &copy; CARTO'}),
+  'Streets': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {maxZoom:19, attribution:'&copy; OpenStreetMap contributors'}),
+  'Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {maxZoom:19, attribution:'Esri, Maxar, Earthstar Geographics'}),
+};
+base['Dark'].addTo(map);
+L.control.layers(base, null, {position:'topright'}).addTo(map);
+L.control.scale({imperial:true, metric:true}).addTo(map);
+
+const heat = L.heatLayer([], {radius:28, blur:22, maxZoom:14, minOpacity:0.25,
+  gradient:{0.2:'#2b83ba',0.4:'#abdda4',0.6:'#ffffbf',0.8:'#fdae61',1:'#d7191c'}});
+const gSpots = L.layerGroup(), gAbove = L.layerGroup(), gUnk = L.layerGroup(),
+      gObs = L.layerGroup(), gBase = L.layerGroup();
+SITES.forEach(s => L.marker(s.ll, {icon:L.divIcon({className:'', html:'', iconSize:[0,0]}), interactive:false})
+  .bindTooltip(s.n, {permanent:true, direction:'center', className:'lbl'}).addTo(gBase));
+
+// ---------------------------------------------------------------- helpers
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = v => v == null ? '—' : v.toFixed(2);
+const durLbl = h => `${h} h`;
+const yearOf = r => +r.d.slice(0,4);
+
+function rv(r, di = S.di, cell = S.cell){
+  return r.s4?.[cell]?.[di] ?? null;
+}
+function kmDist(a, b, c, d){
+  const R=6371, p1=a*Math.PI/180, p2=c*Math.PI/180, dp=p2-p1, dl=(d-b)*Math.PI/180;
+  const x=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+
+function buildSpots(){
+  const reps = DATA.reports.filter(r => { const y=yearOf(r); return y>=S.y0 && y<=S.y1; });
+  const out = [];
+  for (const r of reps){
+    let best = null, bd = 1e9;
+    for (const s of out){
+      const d = kmDist(s.lat, s.lon, r.lat, r.lon);
+      if (d <= S.rad && d < bd){ bd = d; best = s; }
+    }
+    if (!best){ best = {lat:r.lat, lon:r.lon, reps:[]}; out.push(best); }
+    best.reps.push(r);
+    const n = best.reps.length;
+    best.lat += (r.lat - best.lat)/n; best.lon += (r.lon - best.lon)/n;
+  }
+  for (const s of out){
+    const names = {};
+    s.reps.forEach(r => { const k=(r.city||'').trim(); if(k) names[k]=(names[k]||0)+1; });
+    s.name = Object.entries(names).sort((a,b)=>b[1]-a[1])[0]?.[0] || `${s.lat.toFixed(3)}, ${s.lon.toFixed(3)}`;
+    s.events = new Set(s.reps.map(r => r.d)).size;
+    s.reps.sort((a,b) => b.t.localeCompare(a.t));
+  }
+  return out;
+}
+
+// trigger per duration = min peak across the spot's reports
+function trigs(s){
+  return DURS.map((_, di) => {
+    let mn = null;
+    for (const r of s.reps){ const v = rv(r, di); if (v != null && (mn == null || v < mn)) mn = v; }
+    return mn;
+  });
+}
+
+// ---------------------------------------------------------------- popups
+function durHeader(){
+  return '<tr><th></th>' + DURS.map((h,i)=>`<th class="${i===S.di?'cur':''}">${h}h</th>`).join('') + '</tr>';
+}
+function repHTML(r){
+  const pt = r.s4?.pt || [], nb = r.s4?.nb || [], via = r.s4?.via || [], te = r.s4?.te || [];
+  const cell = (v,i,dag) => `<td class="${i===S.di?'cur':''}">${v==null?'—':v.toFixed(2)}${dag && via[i]==='6h' && DURS[i]<48?'†':''}</td>`;
+  const rm = r.remark || r.se_narrative || '';
+  const peakEnd = te[S.di] ? ` · ${S.di>=0?DURS[S.di]+' h':''} peak ended ${esc(te[S.di])}` : '';
+  return `<div class="rep">
+    <div><b>${esc(r.t.replace('T',' '))}</b> · ${esc(r.type)} · <span style="color:var(--muted)">${esc(r.src)}${r.rsrc?' / '+esc(r.rsrc):''}</span></div>
+    <div class="meta">${esc(r.city)}${r.cause?' · '+esc(r.cause):''}${peakEnd}</div>
+    ${r.s4 ? `<table>${durHeader()}
+      <tr><td>cell</td>${pt.map((v,i)=>cell(v,i,true)).join('')}</tr>
+      <tr><td>6 km</td>${nb.map((v,i)=>cell(v,i,false)).join('')}</tr></table>`
+      : '<div class="meta">No Stage IV rainfall for this report.</div>'}
+    ${rm?`<div class="rm">${esc(rm.length>420?rm.slice(0,420)+'…':rm)}</div>`:''}
+  </div>`;
+}
+function spotHTML(s){
+  const tg = trigs(s);
+  return `<div class="pp"><h3>${esc(s.name)}</h3>
+    <div class="meta">${s.reps.length} report${s.reps.length>1?'s':''} on ${s.events} day${s.events>1?'s':''} ·
+      trigger = lowest peak (in) that has flooded here, ${S.cell==='nb'?'max within 6 km':'nearest cell'}</div>
+    <table>${durHeader()}
+      <tr><td>trigger</td>${tg.map((v,i)=>`<td class="${i===S.di?'cur ':''}${v!=null && v<=S.th && i===S.di?'hit':''}">${fmt(v)}</td>`).join('')}</tr></table>
+    ${s.reps.slice(0,20).map(repHTML).join('')}
+    ${s.reps.length>20?`<div class="meta">…${s.reps.length-20} more</div>`:''}</div>`;
+}
+
+// ---------------------------------------------------------------- render
+function render(){
+  if (!DATA) return;
+  const D = DURS[S.di];
+  gSpots.clearLayers(); gAbove.clearLayers(); gUnk.clearLayers();
+  const active = [], heatPts = [];
+  let nKnown = 0;
+  for (const s of spots){
+    s.trig = trigs(s)[S.di];
+    const r = Math.min(6 + Math.sqrt(s.events)*4, 22);
+    if (s.trig == null){
+      L.circleMarker([s.lat,s.lon], {radius:r*0.7, color:'#0009', weight:1, fillColor:GRAY, fillOpacity:0.6})
+        .bindPopup(() => spotHTML(s), {maxWidth:440}).addTo(gUnk);
+      continue;
+    }
+    nKnown++;
+    if (s.trig <= S.th){
+      active.push(s);
+      L.circleMarker([s.lat,s.lon], {radius:r, color:'#000a', weight:1, fillColor:colorFor(s.trig), fillOpacity:0.85})
+        .bindPopup(() => spotHTML(s), {maxWidth:440})
+        .bindTooltip(`${esc(s.name)} · ${s.trig.toFixed(2)}" / ${D} h`, {direction:'top'}).addTo(gSpots);
+      const ease = 1 - s.trig / Math.max(S.th, 0.01);        // 0 at threshold, 1 = floods with ~nothing
+      heatPts.push([s.lat, s.lon, s.events * (0.4 + 0.6*ease)]);
+    } else {
+      L.circleMarker([s.lat,s.lon], {radius:r*0.8, color:ABOVE, weight:2, fillOpacity:0})
+        .bindPopup(() => spotHTML(s), {maxWidth:440})
+        .bindTooltip(`${esc(s.name)} · needs ${s.trig.toFixed(2)}" / ${D} h`, {direction:'top'}).addTo(gAbove);
+    }
+  }
+  const mx = Math.max(1, ...heatPts.map(p => p[2]));
+  heat.setOptions({max: mx*0.6});
+  heat.setLatLngs(heatPts);
+
+  gObs.clearLayers();
+  for (const o of DATA.rain_obs){
+    const y = yearOf(o); if (y < S.y0 || y > S.y1) continue;
+    L.circleMarker([o.lat,o.lon], {radius:4+Math.min(o.inches,15)*0.6, color:'#4cc2ff', weight:1.5, fillColor:'#4cc2ff', fillOpacity:0.25})
+      .bindPopup(`<div class="pp"><h3>${o.inches.toFixed(2)}" observed</h3><div class="meta">${esc(o.t)} · ${esc(o.city)} · ${esc(o.rsrc)}</div><div class="rm">${esc(o.remark)}</div></div>`)
+      .addTo(gObs);
+  }
+
+  $('thVal').textContent = S.th.toFixed(1);
+  $('durVal').textContent = durLbl(D);
+  const unk = spots.length - nKnown;
+  $('stat').innerHTML = `<b>${active.length}</b> of <b>${nKnown}</b> hot spots have flooded with
+    <b>${S.th.toFixed(1)}"</b> or less in <b>${D} h</b>` + (unk?` · ${unk} without Stage IV`:'');
+  active.sort((a,b) => a.trig - b.trig || b.events - a.events);
+  $('list').innerHTML = active.slice(0,40).map(s => `<li data-i="${spots.indexOf(s)}">
+    <span class="dot" style="background:${colorFor(s.trig)}"></span>
+    <span class="nm">${esc(s.name)}<small>${s.events} flood day${s.events>1?'s':''} · last ${esc(s.reps[0].d)}</small></span>
+    <span class="tr">${s.trig.toFixed(2)}"</span></li>`).join('') ||
+    '<li style="cursor:default;color:var(--muted)">None at this threshold</li>';
+  legend();
+}
+
+function legend(){
+  $('legend').innerHTML = `<span style="width:100%">Trigger as a fraction of ${S.th.toFixed(1)}" (lower = floods more easily):</span>` +
+    BINS.map(b => `<span><i style="background:${b.c}"></i>${b.l}</span>`).join('') +
+    `<span><i style="border:2px solid ${ABOVE}"></i>needs more</span><span><i style="background:${GRAY}"></i>no data</span>` +
+    `<span><i style="background:#4cc2ff55;border:1px solid #4cc2ff"></i>obs total</span>`;
+}
+
+function setSlider(){
+  const D = DURS[S.di], mx = SLIDER_MAX[D] ?? 20;
+  $('th').max = mx;
+  if (S.th > mx) S.th = mx;
+  $('th').value = S.th;
+  const step = mx / 4;
+  $('ticks').innerHTML = [0,1,2,3,4].map(i => `<span>${+(i*step).toFixed(1)}</span>`).join('');
+}
+
+// ---------------------------------------------------------------- click-anywhere lookup
+map.on('click', e => {
+  if (!DATA) return;
+  const D = DURS[S.di];
+  const near = spots.map(s => ({s, d:kmDist(e.latlng.lat, e.latlng.lng, s.lat, s.lon)}))
+    .filter(x => x.d <= 2).sort((a,b) => a.d - b.d).slice(0,8);
+  let html = `<div class="pp"><h3>${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}</h3>`;
+  if (!near.length){
+    const n = spots.map(s => ({s, d:kmDist(e.latlng.lat, e.latlng.lng, s.lat, s.lon)})).sort((a,b)=>a.d-b.d)[0];
+    html += `<div class="meta">No flood reports within 2 km${n?`; nearest hot spot is <b>${esc(n.s.name)}</b>, ${n.d.toFixed(1)} km away`:''}.
+      No reports doesn't mean it doesn't flood, only that nobody reported it.</div>`;
+  } else {
+    html += `<div class="meta">Hot spots within 2 km, ${S.th.toFixed(1)}" in ${D} h:</div><table>
+      <tr><th>spot</th><th>km</th><th>${D}h trig</th><th></th></tr>` +
+      near.map(({s,d}) => { const t = trigs(s)[S.di];
+        return `<tr><td style="text-align:left;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</td>
+          <td>${d.toFixed(1)}</td><td>${fmt(t)}</td>
+          <td>${t==null?'?':(t<=S.th?'<b style="color:#f46d43">floods</b>':'no record')}</td></tr>`; }).join('') + '</table>';
+  }
+  L.popup({maxWidth:420}).setLatLng(e.latlng).setContent(html + '</div>').openOn(map);
+});
+
+// ---------------------------------------------------------------- wiring
+function setLayer(id, layer){
+  const on = $(id).checked;
+  if (on && !map.hasLayer(layer)) layer.addTo(map);
+  if (!on && map.hasLayer(layer)) map.removeLayer(layer);
+}
+function syncLayers(){
+  setLayer('lHeat', heat); setLayer('lSpots', gSpots); setLayer('lAbove', gAbove);
+  setLayer('lUnk', gUnk); setLayer('lObs', gObs); setLayer('lBase', gBase);
+}
+['lHeat','lSpots','lAbove','lUnk','lObs','lBase'].forEach(id => $(id).addEventListener('change', syncLayers));
+
+function buildDurButtons(){
+  $('dur').innerHTML = DURS.map((h,i) => `<button data-i="${i}" class="${i===S.di?'on':''}">${h} h</button>`).join('');
+}
+$('dur').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  S.di = +b.dataset.i;
+  [...$('dur').children].forEach(x => x.classList.toggle('on', x===b));
+  setSlider(); render();
+});
+$('th').addEventListener('input', e => { S.th = +e.target.value; render(); });
+$('cell').addEventListener('change', e => { S.cell = e.target.value; render(); });
+$('rad').addEventListener('change', e => { S.rad = +e.target.value; spots = buildSpots(); render(); });
+['y0','y1'].forEach(id => $(id).addEventListener('change', () => {
+  S.y0 = +$('y0').value; S.y1 = +$('y1').value;
+  if (S.y0 > S.y1){ [S.y0,S.y1] = [S.y1,S.y0]; $('y0').value=S.y0; $('y1').value=S.y1; }
+  spots = buildSpots(); render();
+}));
+$('list').addEventListener('click', e => {
+  const li = e.target.closest('li[data-i]'); if (!li) return;
+  const s = spots[+li.dataset.i];
+  map.flyTo([s.lat, s.lon], 15, {duration:0.8});
+  setTimeout(() => L.popup({maxWidth:440}).setLatLng([s.lat,s.lon]).setContent(spotHTML(s)).openOn(map), 850);
+});
+$('hide').onclick = () => { $('side').classList.add('hidden'); $('toggle').classList.add('show'); setTimeout(()=>map.invalidateSize(),250); };
+$('toggle').onclick = () => { $('side').classList.remove('hidden'); $('toggle').classList.remove('show'); setTimeout(()=>map.invalidateSize(),250); };
+
+// ---------------------------------------------------------------- load
+buildDurButtons(); setSlider(); legend();
+fetch('data/flood_hotspots.json', {cache:'no-cache'})
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => {
+    DATA = d;
+    if (Array.isArray(d.durations_h)) {
+      DURS = d.durations_h;
+      S.di = Math.max(0, DURS.indexOf(3));
+      buildDurButtons(); setSlider();
+    }
+    const years = [...new Set(d.reports.map(yearOf).concat(d.rain_obs.map(yearOf)))].sort();
+    if (!years.length) throw new Error('empty');
+    S.y0 = years[0]; S.y1 = years[years.length-1];
+    for (const id of ['y0','y1']) $(id).innerHTML = years.map(y => `<option>${y}</option>`).join('');
+    $('y0').value = S.y0; $('y1').value = S.y1;
+    $('gen').textContent = ` Built ${d.generated}; ${d.reports.length} flood reports, ${d.rain_obs.length} rain obs.`;
+    spots = buildSpots();
+    syncLayers(); render();
+  })
+  .catch(err => {
+    $('stat').textContent = 'No data loaded.';
+    $('msg').style.display = 'block';
+    $('msg').innerHTML = `<b>No dataset yet</b><br><span class="note">Run the <i>Build flood data</i>
+      workflow in the repo's Actions tab (or <code>python scripts/build_data.py</code> locally)
+      to generate <code>data/flood_hotspots.json</code>.</span>`;
+    syncLayers();
+  });
+</script>
+</body>
+</html>
