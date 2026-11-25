@@ -17,14 +17,21 @@
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
     font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
   #app{display:flex;height:100%}
-  #side{width:350px;min-width:350px;background:var(--panel);border-right:1px solid var(--line);
+  #side{width:360px;min-width:360px;background:var(--panel);border-right:1px solid var(--line);
     display:flex;flex-direction:column;overflow:hidden;transition:margin .2s}
-  #side.hidden{margin-left:-350px}
+  #side.hidden{margin-left:-360px}
   #map{flex:1;height:100%}
-  header{padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+  header{padding:14px 16px 0;border-bottom:1px solid var(--line)}
   header h1{font-size:16px;margin:0 0 2px;letter-spacing:.2px}
   header .sub{color:var(--muted);font-size:12px}
+  .tabs{display:flex;gap:4px;margin-top:10px}
+  .tabs button{flex:1;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);
+    padding:8px 0 9px;font:600 13px system-ui;cursor:pointer}
+  .tabs button.on{color:var(--text);border-bottom-color:var(--accent)}
+  .tabs .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#3ad07a;margin-right:6px;vertical-align:1px}
+  .tabs .live-dot.stale{background:#e0a030}.tabs .live-dot.off{background:#666}
   .scroll{overflow-y:auto;flex:1;padding:4px 16px 16px}
+  .pane{display:none}.pane.on{display:block}
   .sec{padding:12px 0;border-bottom:1px solid var(--line)}
   .sec:last-child{border-bottom:none}
   .sec h2{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:0 0 8px;font-weight:600}
@@ -38,29 +45,34 @@
   .row label{flex:0 0 74px;color:var(--muted);font-size:12px}
   select{flex:1;background:var(--panel2);color:var(--text);border:1px solid var(--line);
     border-radius:6px;padding:5px 6px;font:inherit;font-size:13px}
-  .seg{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:6px;overflow:hidden;width:100%}
-  .seg button{background:var(--panel2);color:var(--muted);border:none;padding:7px 0;
-    font:12px var(--mono);cursor:pointer;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
-  .seg button:nth-child(4n){border-right:none}
-  .seg button:nth-child(n+5){border-bottom:none}
+  .seg{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden;width:100%}
+  .seg button{background:var(--panel2);color:var(--muted);border:none;padding:7px 0;font:12px var(--mono);cursor:pointer}
   .seg button.on{background:#20384a;color:var(--text)}
   .chk{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px;cursor:pointer}
   .chk input{accent-color:var(--accent)}
   .stat{font-size:13px;color:var(--muted);margin-top:8px}
   .stat b{color:var(--text);font-family:var(--mono)}
-  #list{list-style:none;margin:0;padding:0}
-  #list li{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:center;
+  ul.list{list-style:none;margin:0;padding:0}
+  ul.list li{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:center;
     padding:7px 6px;border-radius:6px;cursor:pointer}
-  #list li:hover{background:var(--panel2)}
-  #list .dot{width:12px;height:12px;border-radius:50%;border:1px solid #0008}
-  #list .nm{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #list .nm small{display:block;color:var(--muted);font-size:11px}
-  #list .tr{font:12px var(--mono);text-align:right;color:var(--text)}
+  ul.list li:hover{background:var(--panel2)}
+  ul.list .dot{width:12px;height:12px;border-radius:50%;border:1px solid #0008}
+  ul.list .nm{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  ul.list .nm small{display:block;color:var(--muted);font-size:11px}
+  ul.list .tr{font:12px var(--mono);text-align:right;color:var(--text)}
+  ul.list .tr small{display:block;color:var(--muted);font-size:10.5px}
   .legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11px;color:var(--muted)}
   .legend span{display:inline-flex;align-items:center;gap:4px}
   .legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .qbar{display:flex;height:10px;border-radius:3px;overflow:hidden;margin-top:6px}
+  .qbar i{flex:1}
+  .qlab{display:flex;justify-content:space-between;font:10px var(--mono);color:var(--muted);margin-top:2px}
   .note{font-size:11.5px;color:var(--muted);line-height:1.45}
   .note a{color:var(--accent)}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font:12px var(--mono)}
+  .kv span:nth-child(odd){color:var(--muted)}
+  .warn{color:#e0a030}
+  .bigcount{font:600 34px/1 var(--mono)}
   #toggle{position:absolute;z-index:1000;top:10px;left:56px;display:none;
     background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;
     padding:6px 10px;cursor:pointer;font:inherit}
@@ -84,6 +96,9 @@
   .lbl{background:transparent;border:none;box-shadow:none;color:#fff;font:600 11px system-ui;
     text-shadow:0 0 3px #000,0 0 3px #000;white-space:nowrap}
   .lbl:before{display:none}
+  .road{width:18px;height:18px;transform:rotate(45deg);border:2px solid #fff;border-radius:3px;box-shadow:0 0 0 1px #0008}
+  .road.flood{background:#1e88ff}.road.closed{background:#e53935}.road.other{background:#9aa5b1;width:12px;height:12px}
+  .mrms-img{image-rendering:pixelated}
   .leaflet-container{background:#0b0f14}
   @media (max-width:720px){
     #side{position:absolute;z-index:1001;height:100%;width:88vw;min-width:0}
@@ -98,82 +113,153 @@
       <div style="display:flex;justify-content:space-between;align-items:start">
         <div>
           <h1>Space Coast Flood Hot Spots</h1>
-          <div class="sub">CCSFS · KSC · Patrick SFB · Merritt Island · Brevard · Stage IV 2002–present</div>
+          <div class="sub">CCSFS · KSC · Patrick SFB · Merritt Island · Brevard</div>
         </div>
         <button id="hide" title="Hide panel" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">«</button>
       </div>
+      <div class="tabs">
+        <button data-tab="hist" class="on">History</button>
+        <button data-tab="live"><span class="live-dot off" id="liveDot"></span>Live</button>
+      </div>
     </header>
+
     <div class="scroll">
-      <div class="sec">
-        <h2>If this much rain falls…</h2>
-        <div class="big"><span class="val" id="thVal">4.0</span><span class="unit">in</span>
-          <span class="unit">within</span><span class="dur" id="durVal">3 h</span></div>
-        <input id="th" type="range" min="0" max="10" step="0.1" value="4">
-        <div class="ticks" id="ticks"></div>
-        <div class="row" style="margin-top:10px"><label>Duration</label>
-          <div class="seg" id="dur"></div>
+      <!-- ============================ HISTORY ============================ -->
+      <div class="pane on" id="pane-hist">
+        <div class="sec">
+          <h2>If this much rain falls…</h2>
+          <div class="big"><span class="val" id="thVal">4.0</span><span class="unit">in</span>
+            <span class="unit">within</span><span class="dur" id="durVal">3 h</span></div>
+          <input id="th" type="range" min="0" max="10" step="0.1" value="4">
+          <div class="ticks" id="ticks"></div>
+          <div class="row" style="margin-top:10px"><label>Duration</label>
+            <div class="seg" id="dur"></div>
+          </div>
+          <div class="stat" id="stat">Loading…</div>
         </div>
-        <div class="stat" id="stat">Loading…</div>
+
+        <div class="sec">
+          <h2>Rainfall definition</h2>
+          <div class="row"><label>Grid value</label>
+            <select id="cell" class="cellsel">
+              <option value="nb">Max within ~6 km of report</option>
+              <option value="pt">Nearest grid cell</option>
+            </select>
+          </div>
+          <div class="row"><label>Years</label>
+            <select id="y0"></select><span style="color:var(--muted)">–</span><select id="y1"></select>
+          </div>
+          <div class="row"><label>Spot radius</label>
+            <select id="rad">
+              <option value="0.25">250 m</option>
+              <option value="0.5" selected>500 m</option>
+              <option value="1">1 km</option>
+              <option value="2">2 km</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sec">
+          <h2>Layers</h2>
+          <label class="chk"><input type="checkbox" id="lHeat" checked> Heat map (flooding at ≤ threshold)</label>
+          <label class="chk"><input type="checkbox" id="lSpots" checked> Hot spots (colored by trigger)</label>
+          <label class="chk"><input type="checkbox" id="lAbove"> Spots needing more rain (hollow)</label>
+          <label class="chk"><input type="checkbox" id="lUnk"> Spots without Stage IV data (gray)</label>
+          <label class="chk"><input type="checkbox" id="lObs"> Observed heavy-rain totals (LSR)</label>
+          <label class="chk"><input type="checkbox" class="lRoads" checked> FDOT flooding / closures (live)</label>
+          <label class="chk"><input type="checkbox" class="lBase" checked> Installation labels</label>
+          <div class="legend" id="legend" style="margin-top:8px"></div>
+          <div class="note" style="margin-top:8px">Tip: click anywhere on the map to check nearby spots for the current duration.</div>
+        </div>
+
+        <div class="sec">
+          <h2>Hot spots active at this threshold</h2>
+          <ul class="list" id="list"></ul>
+        </div>
+
+        <div class="sec note">
+          <b>How to read this.</b> Each hot spot is a cluster of NWS flood / flash-flood reports.
+          For each report, the build finds the <b>peak</b> Stage IV accumulation for each duration
+          (1–72 h) over windows ending between 12 h before the report and 2 h after it.
+          A spot's <i>trigger</i> for a duration is the <b>lowest</b> peak that has produced a flood
+          report there. The spot lights up when the threshold is at or above its trigger.
+          <br><br>
+          <b>Caveats.</b> Reports only exist where flooding was seen and reported, so the secured interiors
+          of CCSFS and KSC are under-sampled. Stage IV is about 4.7 km. Values marked † fell back
+          to 6-hourly files because of gaps in the hourly data. There's no record of heavy rain that
+          <i>didn't</i> flood a spot, so each trigger is an upper bound on the true threshold. Tropical events
+          can mix lagoon or surge water with rainfall flooding.
+          <br><br>
+          Data: <a href="https://mesonet.agron.iastate.edu/lsr/" target="_blank">IEM LSR archive</a>,
+          <a href="https://www.ncdc.noaa.gov/stormevents/" target="_blank">NCEI Storm Events</a>,
+          NCEP Stage IV via <a href="https://mesonet.agron.iastate.edu/" target="_blank">IEM</a>.
+          <span id="gen"></span>
+        </div>
       </div>
 
-      <div class="sec">
-        <h2>Rainfall definition</h2>
-        <div class="row"><label>Grid value</label>
-          <select id="cell">
-            <option value="nb">Max within ~6 km of report</option>
-            <option value="pt">Nearest Stage IV cell</option>
-          </select>
+      <!-- ============================== LIVE ============================== -->
+      <div class="pane" id="pane-live">
+        <div class="sec">
+          <h2>Hot spots vs. current MRMS rainfall</h2>
+          <div class="big"><span class="bigcount" id="lvCount">–</span><span class="unit" id="lvCountLbl">loading…</span></div>
+          <div class="stat" id="lvSub"></div>
+          <div class="legend" style="margin-top:8px" id="lvLegend"></div>
         </div>
-        <div class="row"><label>Years</label>
-          <select id="y0"></select><span style="color:var(--muted)">–</span><select id="y1"></select>
+
+        <div class="sec">
+          <h2>MRMS</h2>
+          <div class="row"><label>Product</label>
+            <select id="lvSrc">
+              <option value="ro">Radar-only (fastest)</option>
+              <option value="ms">Multi-sensor Pass 2 (gauge-corrected, ~1 h lag)</option>
+            </select>
+          </div>
+          <div class="row"><label>Grid value</label>
+            <select id="cell2" class="cellsel">
+              <option value="nb">Max within ~6 km of spot</option>
+              <option value="pt">Nearest grid cell</option>
+            </select>
+          </div>
+          <div class="row"><label>Show</label>
+            <div class="seg" id="lvDur"></div>
+          </div>
+          <div class="row"><label>Opacity</label><input type="range" id="lvOp" min="0" max="1" step="0.05" value="0.65" style="margin:0"></div>
+          <div class="qbar" id="qbar"></div><div class="qlab" id="qlab"></div>
+          <div class="kv" id="lvValid" style="margin-top:10px"></div>
         </div>
-        <div class="row"><label>Spot radius</label>
-          <select id="rad">
-            <option value="0.25">250 m</option>
-            <option value="0.5" selected>500 m</option>
-            <option value="1">1 km</option>
-            <option value="2">2 km</option>
-          </select>
+
+        <div class="sec">
+          <h2>Layers</h2>
+          <label class="chk"><input type="checkbox" id="lMrms" checked> MRMS accumulation</label>
+          <label class="chk"><input type="checkbox" id="lLive" checked> Hot-spot status</label>
+          <label class="chk"><input type="checkbox" id="lLiveBelow"> Include spots below 50%</label>
+          <label class="chk"><input type="checkbox" class="lRoads" checked> FDOT flooding / closures</label>
+          <label class="chk"><input type="checkbox" id="lRoadsAll"> All FDOT incidents</label>
+          <label class="chk"><input type="checkbox" class="lBase" checked> Installation labels</label>
+          <div class="stat" id="roadStat"></div>
         </div>
-      </div>
 
-      <div class="sec">
-        <h2>Layers</h2>
-        <label class="chk"><input type="checkbox" id="lHeat" checked> Heat map (flooding at ≤ threshold)</label>
-        <label class="chk"><input type="checkbox" id="lSpots" checked> Hot spots (colored by trigger)</label>
-        <label class="chk"><input type="checkbox" id="lAbove"> Spots needing more rain (hollow)</label>
-        <label class="chk"><input type="checkbox" id="lUnk"> Spots without Stage IV data (gray)</label>
-        <label class="chk"><input type="checkbox" id="lObs"> Observed heavy-rain totals (LSR)</label>
-        <label class="chk"><input type="checkbox" id="lBase" checked> Installation labels</label>
-        <div class="legend" id="legend" style="margin-top:8px"></div>
-        <div class="note" style="margin-top:8px">Tip: click anywhere on the map to check nearby spots for the current duration.</div>
-      </div>
+        <div class="sec">
+          <h2>Closest to flooding</h2>
+          <ul class="list" id="lvList"></ul>
+        </div>
 
-      <div class="sec">
-        <h2>Hot spots active at this threshold</h2>
-        <ul id="list"></ul>
-      </div>
-
-      <div class="sec note">
-        <b>How to read this.</b> Each hot spot is a cluster of NWS flood / flash-flood reports.
-        For each report, the build finds the <b>peak</b> Stage IV accumulation for each duration
-        (1–72 h) over windows ending between 12 h before the report and 2 h after it.
-        A spot's <i>trigger</i> for a duration is the <b>lowest</b> peak that has produced a flood
-        report there. The spot lights up when the threshold is at or above its trigger, meaning
-        "this much rain in this time has flooded here before".
-        <br><br>
-        <b>Caveats.</b> Reports only exist where flooding was seen and reported, so the secured
-        interiors of CCSFS and KSC are under-sampled. Stage IV is about 4.7 km. Hourly fields get
-        less RFC QC than the 6-hourly ones; 48/72 h use 6-hourly files, and values marked † fell back
-        to 6-hourly because of gaps in the hourly data. There's no record of heavy rain that
-        <i>didn't</i> flood a spot, so each trigger is an upper bound on the true threshold. For
-        short durations the peak 1–3 h burst may not be what caused flooding that came after
-        a long soak. Tropical events can mix lagoon or surge water with rainfall flooding.
-        <br><br>
-        Data: <a href="https://mesonet.agron.iastate.edu/lsr/" target="_blank">IEM LSR archive</a>,
-        <a href="https://www.ncdc.noaa.gov/stormevents/" target="_blank">NCEI Storm Events</a>,
-        NCEP Stage IV via <a href="https://mesonet.agron.iastate.edu/" target="_blank">IEM</a>.
-        <span id="gen"></span>
+        <div class="sec note">
+          <b>How this works.</b> For each hot spot, the page samples the latest MRMS 1, 3, 6, 12, 24, 48 and
+          72 h totals at the spot and divides each by that spot's historical trigger for the same duration.
+          The highest ratio sets the status: <b>100%</b> means rain has already reached an amount that has
+          flooded this spot before. Click anywhere for the current totals at that point.
+          <br><br>
+          <b>Caveats.</b> Triggers come from Stage IV, and MRMS radar-only can run high or low against it,
+          especially in tropical rain and on the edges of the radar's coverage. Multi-sensor Pass 2 is closer to
+          Stage IV but lags about an hour. MRMS refreshes about every 10 min via GitHub Actions, which can be
+          delayed; check the valid times above. FDOT events come from the DIVAS feed behind FL511 and mostly
+          cover state roads; county roads and base roads usually won't appear.
+          <br><br>
+          Data: NOAA MRMS (<a href="https://mrms.ncep.noaa.gov/" target="_blank">NCEP</a> /
+          <a href="https://registry.opendata.aws/noaa-mrms-pds/" target="_blank">AWS</a>),
+          <a href="https://fl511.com/" target="_blank">FDOT / FL511</a>.
+        </div>
       </div>
     </div>
   </aside>
@@ -183,10 +269,11 @@
 </div>
 
 <script>
-// ---------------------------------------------------------------- config
+{
+// ================================================================ config
 let DURS = [1,2,3,6,12,24,48,72];
+const LIVE_DURS = [1,3,6,12,24,48,72];
 const SLIDER_MAX = {1:5, 2:7, 3:8, 6:10, 12:14, 24:18, 48:24, 72:30};
-// trigger colors are relative to the current threshold: how far below it the spot floods
 const BINS = [
   {f:0.25, c:'#7a0012', l:'≤25%'},
   {f:0.5,  c:'#d7191c', l:'25–50%'},
@@ -194,12 +281,28 @@ const BINS = [
   {f:1.0,  c:'#fdae61', l:'75–100%'},
 ];
 const ABOVE = '#6aa9d6', GRAY = '#7d8896';
-function colorFor(v){
-  if (v == null) return GRAY;
-  if (v > S.th) return ABOVE;
-  const f = S.th > 0 ? v / S.th : 0;
-  return BINS.find(b => f <= b.f).c;
-}
+const STATUS = [
+  {min:1.0,  c:'#e0002a', l:'≥100%: at or past historical flood rain'},
+  {min:0.75, c:'#ff7a1a', l:'75–100%: approaching'},
+  {min:0.5,  c:'#ffd23f', l:'50–75%: elevated'},
+  {min:0,    c:'#5f6b7a', l:'<50%'},
+];
+// MRMS QPE colors (inches)
+const QPE = [[0.01,'#a7d8ff'],[0.1,'#4aa8f0'],[0.25,'#1c6fd1'],[0.5,'#25c240'],[0.75,'#13892a'],
+  [1,'#ffe74c'],[1.5,'#ffb000'],[2,'#ff7a00'],[3,'#ff2a2a'],[4,'#c4001a'],[6,'#ff38d0'],[8,'#9b2cff'],[10,'#eae6ff']];
+const LIVE_URL = (() => {
+  const h = location.hostname;
+  if (h.endsWith('.github.io')){
+    const owner = h.split('.')[0];
+    const seg = location.pathname.split('/').filter(Boolean)[0];
+    const repo = seg && !seg.includes('.') ? seg : h;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/live/mrms_latest.json`;
+  }
+  return 'live/mrms_latest.json';
+})();
+const FDOT_URL = 'https://gis.fdot.gov/arcgis/rest/services/DIVAS_GetEvent/MapServer/0/query';
+const REFRESH_MS = 5*60*1000;
+const NB_KM = 6;
 
 const SITES = [
   {n:'Cape Canaveral SFS', ll:[28.4889,-80.5778]},
@@ -211,16 +314,15 @@ const SITES = [
   {n:'Titusville', ll:[28.6122,-80.8076]},
 ];
 
-const S = {th:4, di:2, cell:'nb', y0:null, y1:null, rad:0.5};
-let DATA = null, spots = [];
+const S = {tab:'hist', th:4, di:2, cell:'nb', y0:null, y1:null, rad:0.5,
+           lvSrc:'ro', lvDur:3, lvOp:0.65};
+let DATA = null, spots = [], LIVE = null, ROADS = [], liveRows = [];
 
-// ---------------------------------------------------------------- map
+// ================================================================ map
 const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([28.42,-80.66], 11);
-map.createPane('labels');                       // road/place labels above tiles, below spots
-map.getPane('labels').style.zIndex = 350;
-map.getPane('labels').style.pointerEvents = 'none';
+map.createPane('labels'); map.getPane('labels').style.zIndex = 350; map.getPane('labels').style.pointerEvents = 'none';
+map.createPane('qpe');    map.getPane('qpe').style.zIndex = 300;    map.getPane('qpe').style.pointerEvents = 'none';
 const base = {
-  // Esri Canvas Dark Gray (no API key). Labels/roads come from the separate Reference layer.
   'Dark': L.layerGroup([
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
       {maxZoom:19, maxNativeZoom:16, attribution:'Esri, HERE, Garmin, &copy; OpenStreetMap contributors'}),
@@ -239,25 +341,27 @@ L.control.scale({imperial:true, metric:true}).addTo(map);
 const heat = L.heatLayer([], {radius:28, blur:22, maxZoom:14, minOpacity:0.25,
   gradient:{0.2:'#2b83ba',0.4:'#abdda4',0.6:'#ffffbf',0.8:'#fdae61',1:'#d7191c'}});
 const gSpots = L.layerGroup(), gAbove = L.layerGroup(), gUnk = L.layerGroup(),
-      gObs = L.layerGroup(), gBase = L.layerGroup();
+      gObs = L.layerGroup(), gBase = L.layerGroup(), gLive = L.layerGroup(), gRoads = L.layerGroup();
+let qpeLayer = null;
 SITES.forEach(s => L.marker(s.ll, {icon:L.divIcon({className:'', html:'', iconSize:[0,0]}), interactive:false})
   .bindTooltip(s.n, {permanent:true, direction:'center', className:'lbl'}).addTo(gBase));
 
-// ---------------------------------------------------------------- helpers
+// ================================================================ helpers
 const $ = id => document.getElementById(id);
-const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = v => v == null ? '—' : v.toFixed(2);
-const durLbl = h => `${h} h`;
 const yearOf = r => +r.d.slice(0,4);
-
-function rv(r, di = S.di, cell = S.cell){
-  return r.s4?.[cell]?.[di] ?? null;
-}
 function kmDist(a, b, c, d){
   const R=6371, p1=a*Math.PI/180, p2=c*Math.PI/180, dp=p2-p1, dl=(d-b)*Math.PI/180;
   const x=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
   return 2*R*Math.asin(Math.sqrt(x));
 }
+function ageMin(iso){ return iso ? (Date.now() - Date.parse(iso.replace('Z',':00Z')))/60000 : null; }
+function ageTxt(m){ if (m == null) return '—'; if (m < 90) return `${Math.round(m)} min ago`; return `${(m/60).toFixed(1)} h ago`; }
+function qpeColor(v){ let c = null; for (const [t,col] of QPE){ if (v >= t) c = col; else break; } return c; }
+
+// ================================================================ HISTORY
+const rv = (r, di = S.di, cell = S.cell) => r.s4?.[cell]?.[di] ?? null;
 
 function buildSpots(){
   const reps = DATA.reports.filter(r => { const y=yearOf(r); return y>=S.y0 && y<=S.y1; });
@@ -282,8 +386,6 @@ function buildSpots(){
   }
   return out;
 }
-
-// trigger per duration = min peak across the spot's reports
 function trigs(s){
   return DURS.map((_, di) => {
     let mn = null;
@@ -291,16 +393,21 @@ function trigs(s){
     return mn;
   });
 }
-
-// ---------------------------------------------------------------- popups
+function colorFor(v){
+  if (v == null) return GRAY;
+  if (v > S.th) return ABOVE;
+  const f = S.th > 0 ? v / S.th : 0;
+  return BINS.find(b => f <= b.f).c;
+}
 function durHeader(){
-  return '<tr><th></th>' + DURS.map((h,i)=>`<th class="${i===S.di?'cur':''}">${h}h</th>`).join('') + '</tr>';
+  return '<tr><th></th>' + DURS.map((h,i)=>`<th class="${i===S.di&&S.tab==='hist'?'cur':''}">${h}h</th>`).join('') + '</tr>';
 }
 function repHTML(r){
   const pt = r.s4?.pt || [], nb = r.s4?.nb || [], via = r.s4?.via || [], te = r.s4?.te || [];
-  const cell = (v,i,dag) => `<td class="${i===S.di?'cur':''}">${v==null?'—':v.toFixed(2)}${dag && via[i]==='6h' && DURS[i]<48?'†':''}</td>`;
+  const cur = i => i===S.di && S.tab==='hist' ? 'cur' : '';
+  const cell = (v,i,dag) => `<td class="${cur(i)}">${v==null?'—':v.toFixed(2)}${dag && via[i]==='6h' && DURS[i]<48?'†':''}</td>`;
   const rm = r.remark || r.se_narrative || '';
-  const peakEnd = te[S.di] ? ` · ${S.di>=0?DURS[S.di]+' h':''} peak ended ${esc(te[S.di])}` : '';
+  const peakEnd = te[S.di] ? ` · ${DURS[S.di]} h peak ended ${esc(te[S.di])}` : '';
   return `<div class="rep">
     <div><b>${esc(r.t.replace('T',' '))}</b> · ${esc(r.type)} · <span style="color:var(--muted)">${esc(r.src)}${r.rsrc?' / '+esc(r.rsrc):''}</span></div>
     <div class="meta">${esc(r.city)}${r.cause?' · '+esc(r.cause):''}${peakEnd}</div>
@@ -311,19 +418,32 @@ function repHTML(r){
     ${rm?`<div class="rm">${esc(rm.length>420?rm.slice(0,420)+'…':rm)}</div>`:''}
   </div>`;
 }
+function liveRowHTML(s){
+  if (!LIVE) return '';
+  const lv = liveAt(s);
+  const tg = trigs(s);
+  const cells = DURS.map((h) => {
+    const k = LIVE_DURS.indexOf(h); if (k < 0) return '<td>·</td>';
+    const v = lv[k], t = tg[DURS.indexOf(h)];
+    const hit = v != null && t != null && v >= t;
+    return `<td class="${hit?'hit':''}">${fmt(v)}</td>`;
+  }).join('');
+  return `<tr><td>now</td>${cells}</tr>`;
+}
 function spotHTML(s){
   const tg = trigs(s);
   return `<div class="pp"><h3>${esc(s.name)}</h3>
     <div class="meta">${s.reps.length} report${s.reps.length>1?'s':''} on ${s.events} day${s.events>1?'s':''} ·
       trigger = lowest peak (in) that has flooded here, ${S.cell==='nb'?'max within 6 km':'nearest cell'}</div>
     <table>${durHeader()}
-      <tr><td>trigger</td>${tg.map((v,i)=>`<td class="${i===S.di?'cur ':''}${v!=null && v<=S.th && i===S.di?'hit':''}">${fmt(v)}</td>`).join('')}</tr></table>
+      <tr><td>trigger</td>${tg.map((v,i)=>`<td class="${i===S.di&&S.tab==='hist'?'cur ':''}${v!=null && v<=S.th && i===S.di && S.tab==='hist'?'hit':''}">${fmt(v)}</td>`).join('')}</tr>
+      ${liveRowHTML(s)}</table>
+    ${LIVE?`<div class="meta">"now" = MRMS ${S.lvSrc==='ro'?'radar-only':'multi-sensor'}; red where it already meets the trigger.</div>`:''}
     ${s.reps.slice(0,20).map(repHTML).join('')}
     ${s.reps.length>20?`<div class="meta">…${s.reps.length-20} more</div>`:''}</div>`;
 }
 
-// ---------------------------------------------------------------- render
-function render(){
+function renderHist(){
   if (!DATA) return;
   const D = DURS[S.di];
   gSpots.clearLayers(); gAbove.clearLayers(); gUnk.clearLayers();
@@ -334,20 +454,20 @@ function render(){
     const r = Math.min(6 + Math.sqrt(s.events)*4, 22);
     if (s.trig == null){
       L.circleMarker([s.lat,s.lon], {radius:r*0.7, color:'#0009', weight:1, fillColor:GRAY, fillOpacity:0.6})
-        .bindPopup(() => spotHTML(s), {maxWidth:440}).addTo(gUnk);
+        .bindPopup(() => spotHTML(s), {maxWidth:460}).addTo(gUnk);
       continue;
     }
     nKnown++;
     if (s.trig <= S.th){
       active.push(s);
       L.circleMarker([s.lat,s.lon], {radius:r, color:'#000a', weight:1, fillColor:colorFor(s.trig), fillOpacity:0.85})
-        .bindPopup(() => spotHTML(s), {maxWidth:440})
+        .bindPopup(() => spotHTML(s), {maxWidth:460})
         .bindTooltip(`${esc(s.name)} · ${s.trig.toFixed(2)}" / ${D} h`, {direction:'top'}).addTo(gSpots);
-      const ease = 1 - s.trig / Math.max(S.th, 0.01);        // 0 at threshold, 1 = floods with ~nothing
+      const ease = 1 - s.trig / Math.max(S.th, 0.01);
       heatPts.push([s.lat, s.lon, s.events * (0.4 + 0.6*ease)]);
     } else {
       L.circleMarker([s.lat,s.lon], {radius:r*0.8, color:ABOVE, weight:2, fillOpacity:0})
-        .bindPopup(() => spotHTML(s), {maxWidth:440})
+        .bindPopup(() => spotHTML(s), {maxWidth:460})
         .bindTooltip(`${esc(s.name)} · needs ${s.trig.toFixed(2)}" / ${D} h`, {direction:'top'}).addTo(gAbove);
     }
   }
@@ -364,7 +484,7 @@ function render(){
   }
 
   $('thVal').textContent = S.th.toFixed(1);
-  $('durVal').textContent = durLbl(D);
+  $('durVal').textContent = `${D} h`;
   const unk = spots.length - nKnown;
   $('stat').innerHTML = `<b>${active.length}</b> of <b>${nKnown}</b> hot spots have flooded with
     <b>${S.th.toFixed(1)}"</b> or less in <b>${D} h</b>` + (unk?` · ${unk} without Stage IV`:'');
@@ -374,16 +494,11 @@ function render(){
     <span class="nm">${esc(s.name)}<small>${s.events} flood day${s.events>1?'s':''} · last ${esc(s.reps[0].d)}</small></span>
     <span class="tr">${s.trig.toFixed(2)}"</span></li>`).join('') ||
     '<li style="cursor:default;color:var(--muted)">None at this threshold</li>';
-  legend();
-}
-
-function legend(){
   $('legend').innerHTML = `<span style="width:100%">Trigger as a fraction of ${S.th.toFixed(1)}" (lower = floods more easily):</span>` +
     BINS.map(b => `<span><i style="background:${b.c}"></i>${b.l}</span>`).join('') +
     `<span><i style="border:2px solid ${ABOVE}"></i>needs more</span><span><i style="background:${GRAY}"></i>no data</span>` +
     `<span><i style="background:#4cc2ff55;border:1px solid #4cc2ff"></i>obs total</span>`;
 }
-
 function setSlider(){
   const D = DURS[S.di], mx = SLIDER_MAX[D] ?? 20;
   $('th').max = mx;
@@ -392,69 +507,280 @@ function setSlider(){
   const step = mx / 4;
   $('ticks').innerHTML = [0,1,2,3,4].map(i => `<span>${+(i*step).toFixed(1)}</span>`).join('');
 }
+function buildDurButtons(){
+  $('dur').innerHTML = DURS.map((h,i) => `<button data-i="${i}" class="${i===S.di?'on':''}">${h} h</button>`).join('');
+}
 
-// ---------------------------------------------------------------- click-anywhere lookup
+// ================================================================ LIVE
+function liveCellsFor(lat, lon){
+  const g = LIVE.grid;
+  const r0 = Math.round((g.lat_n - lat)/g.dlat), c0 = Math.round((lon - g.lon_w)/g.dlon);
+  if (S.cell === 'pt'){
+    return (r0>=0 && r0<g.ny && c0>=0 && c0<g.nx) ? [r0*g.nx + c0] : [];
+  }
+  const dr = Math.ceil(NB_KM/111/g.dlat)+1, dc = Math.ceil(NB_KM/(111*Math.cos(lat*Math.PI/180))/g.dlon)+1;
+  const out = [];
+  for (let r = Math.max(0,r0-dr); r <= Math.min(g.ny-1, r0+dr); r++)
+    for (let c = Math.max(0,c0-dc); c <= Math.min(g.nx-1, c0+dc); c++)
+      if (kmDist(lat, lon, g.lat_n - r*g.dlat, g.lon_w + c*g.dlon) <= NB_KM) out.push(r*g.nx + c);
+  if (!out.length && r0>=0 && r0<g.ny && c0>=0 && c0<g.nx) out.push(r0*g.nx + c0);
+  return out;
+}
+function liveAtCells(cells, src = S.lvSrc){
+  return LIVE_DURS.map(h => {
+    const arr = LIVE?.[src]?.[String(h)]; if (!arr) return null;
+    let mx = -1; for (const k of cells){ const v = arr[k]; if (v > mx) mx = v; }
+    return mx < 0 ? null : mx/100;
+  });
+}
+function liveAt(s){
+  const key = S.cell + S.lvSrc;
+  if (!s._lc || s._lcKey !== S.cell){ s._lc = liveCellsFor(s.lat, s.lon); s._lcKey = S.cell; }
+  if (s._lv && s._lvKey === key && s._lvGen === LIVE.generated) return s._lv;
+  s._lv = liveAtCells(s._lc); s._lvKey = key; s._lvGen = LIVE.generated;
+  return s._lv;
+}
+function statusFor(ratio){ return STATUS.find(x => ratio >= x.min); }
+
+function drawQPE(){
+  if (qpeLayer){ map.removeLayer(qpeLayer); qpeLayer = null; }
+  if (!LIVE) return;
+  const arr = LIVE[S.lvSrc]?.[String(S.lvDur)];
+  if (!arr) return;
+  const g = LIVE.grid, cv = document.createElement('canvas');
+  cv.width = g.nx; cv.height = g.ny;
+  const ctx = cv.getContext('2d'), img = ctx.createImageData(g.nx, g.ny);
+  for (let k = 0; k < arr.length; k++){
+    const v = arr[k]; if (v < 1) continue;
+    const c = qpeColor(v/100); if (!c) continue;
+    const n = parseInt(c.slice(1), 16);
+    img.data[k*4] = n>>16; img.data[k*4+1] = (n>>8)&255; img.data[k*4+2] = n&255; img.data[k*4+3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  const b = [[g.lat_n - (g.ny-1)*g.dlat - g.dlat/2, g.lon_w - g.dlon/2], [g.lat_n + g.dlat/2, g.lon_w + (g.nx-1)*g.dlon + g.dlon/2]];
+  qpeLayer = L.imageOverlay(cv.toDataURL(), b, {opacity:S.lvOp, pane:'qpe', className:'mrms-img', interactive:false});
+  if (S.tab === 'live' && $('lMrms').checked) qpeLayer.addTo(map);
+}
+
+function renderLive(){
+  const valid = LIVE?.valid?.[S.lvSrc] || {};
+  // dot + valid times
+  const ages = LIVE_DURS.map(h => ageMin(valid[String(h)])).filter(x => x != null);
+  const newest = ages.length ? Math.min(...ages) : null;
+  const dot = $('liveDot');
+  dot.className = 'live-dot ' + (newest == null ? 'off' : newest <= (S.lvSrc==='ro'?75:150) ? '' : 'stale');
+  $('lvValid').innerHTML = LIVE ? LIVE_DURS.map(h => {
+    const v = valid[String(h)], a = ageMin(v);
+    return `<span>${h} h</span><span class="${a!=null && a > (S.lvSrc==='ro'?90:180) ? 'warn' : ''}">${v ? esc(v.replace('T',' ')) + ' · ' + ageTxt(a) : 'unavailable'}</span>`;
+  }).join('') + `<span>fetched</span><span>${esc((LIVE.generated||'').replace('T',' '))}</span>`
+    : `<span>status</span><span class="warn">No live file yet. Run the "Live MRMS" workflow.</span>`;
+  $('lvDur').innerHTML = LIVE_DURS.map(h => `<button data-h="${h}" class="${h===S.lvDur?'on':''}">${h} h</button>`).join('');
+  $('qbar').innerHTML = QPE.map(([,c]) => `<i style="background:${c}"></i>`).join('');
+  $('qlab').innerHTML = QPE.filter((_,i)=>i%2===0).map(([t]) => `<span>${t}</span>`).join('') + '<span>in</span>';
+  $('lvLegend').innerHTML = STATUS.map(x => `<span><i style="background:${x.c}"></i>${x.l}</span>`).join('');
+
+  gLive.clearLayers();
+  liveRows = [];
+  if (!LIVE || !DATA){ $('lvCount').textContent='–'; $('lvCountLbl').textContent = LIVE ? 'loading history…' : 'no live data'; $('lvList').innerHTML=''; return; }
+
+  for (const s of spots){
+    const tg = trigs(s), lv = liveAt(s);
+    let best = null;
+    LIVE_DURS.forEach((h, k) => {
+      const t = tg[DURS.indexOf(h)], v = lv[k];
+      if (t == null || v == null) return;
+      const ratio = v / Math.max(t, 0.1);
+      if (!best || ratio > best.ratio) best = {ratio, h, v, t};
+    });
+    if (best) liveRows.push({s, ...best});
+  }
+  liveRows.sort((a,b) => b.ratio - a.ratio);
+  const showBelow = $('lLiveBelow').checked;
+  for (const row of liveRows){
+    const st = statusFor(row.ratio);
+    if (row.ratio < 0.5 && !showBelow) continue;
+    const r = Math.min(6 + Math.sqrt(row.s.events)*4, 22);
+    L.circleMarker([row.s.lat,row.s.lon], {radius:r, color: row.ratio>=1?'#fff':'#000a', weight: row.ratio>=1?2:1,
+        fillColor:st.c, fillOpacity: row.ratio<0.5?0.35:0.9})
+      .bindPopup(() => spotHTML(row.s), {maxWidth:460})
+      .bindTooltip(`${esc(row.s.name)} · ${Math.round(row.ratio*100)}% (${row.h} h: ${row.v.toFixed(2)}" of ${row.t.toFixed(2)}")`, {direction:'top'})
+      .addTo(gLive);
+  }
+  const nAt = liveRows.filter(r => r.ratio >= 1).length, nApp = liveRows.filter(r => r.ratio >= 0.75 && r.ratio < 1).length;
+  $('lvCount').textContent = nAt;
+  $('lvCount').style.color = nAt ? '#e0002a' : 'var(--text)';
+  $('lvCountLbl').textContent = `hot spot${nAt===1?'':'s'} at or past historical flooding rainfall`;
+  $('lvSub').innerHTML = `<b>${nApp}</b> approaching (75–100%) · ${liveRows.length} spots compared · ${S.lvSrc==='ro'?'radar-only':'multi-sensor Pass 2'}`;
+  $('lvList').innerHTML = liveRows.slice(0,30).map(row => `<li data-i="${spots.indexOf(row.s)}">
+    <span class="dot" style="background:${statusFor(row.ratio).c}"></span>
+    <span class="nm">${esc(row.s.name)}<small>${row.h} h: ${row.v.toFixed(2)}" now vs ${row.t.toFixed(2)}" trigger</small></span>
+    <span class="tr">${Math.round(row.ratio*100)}%</span></li>`).join('') ||
+    '<li style="cursor:default;color:var(--muted)">No spots with comparable data</li>';
+}
+
+async function loadLive(){
+  try {
+    const r = await fetch(LIVE_URL + (LIVE_URL.startsWith('http') ? `?t=${Date.now()}` : ''), {cache:'no-store'});
+    if (!r.ok) throw new Error(r.status);
+    LIVE = await r.json();
+  } catch(e){ LIVE = null; }
+  drawQPE(); renderLive();
+}
+
+// ================================================================ FDOT
+async function loadRoads(){
+  const p = new URLSearchParams({where:'1=1', outFields:'*', returnGeometry:'true', outSR:'4326', inSR:'4326', f:'json',
+    geometry:'-81.10,27.90,-80.35,28.95', geometryType:'esriGeometryEnvelope', spatialRel:'esriSpatialRelIntersects'});
+  try {
+    const j = await fetch(`${FDOT_URL}?${p}`).then(r => r.json());
+    if (j.error) throw new Error(j.error.message);
+    ROADS = (j.features || []).map(f => f.attributes);
+    $('roadStat').textContent = '';
+  } catch(e){
+    ROADS = [];
+    $('roadStat').innerHTML = `<span class="warn">FDOT feed unavailable (${esc(e.message)})</span>`;
+  }
+  renderRoads();
+}
+function roadKind(a){
+  const t = `${a.EventTypeDesc||''} ${a.EventTypeSae||''} ${a.DescriptionEn||''}`;
+  if (/flood|high water|water over|standing water|ponding/i.test(t)) return 'flood';
+  if (/all lanes|road closed|closure/i.test(`${a.AffectedLanes||''} ${a.DescriptionEn||''}`)) return 'closed';
+  return 'other';
+}
+function renderRoads(){
+  gRoads.clearLayers();
+  const all = $('lRoadsAll').checked;
+  let nf = 0, nc = 0;
+  for (const a of ROADS){
+    const k = roadKind(a);
+    if (k === 'flood') nf++; else if (k === 'closed') nc++;
+    if (k === 'other' && !all) continue;
+    const lat = +a.Latitude, lon = +a.Longitude; if (!isFinite(lat) || !isFinite(lon)) continue;
+    L.marker([lat, lon], {icon: L.divIcon({className:'', html:`<div class="road ${k}"></div>`, iconSize:[18,18], iconAnchor:[9,9]}),
+        zIndexOffset: k==='flood'?1000:k==='closed'?500:0})
+      .bindPopup(`<div class="pp"><h3>${esc(a.EventTypeDesc || 'Event')}${k==='flood'?' 🌊':''}</h3>
+        <div class="meta">${esc(a.Highway)} ${esc(a.Direction||'')} · ${esc(a.OffsetType||'')} ${esc(a.CrossStreet||'')} · ${esc(a.County)} Co.</div>
+        <div class="rm">${esc(a.DescriptionEn)}</div>
+        <div class="meta" style="margin-top:6px">Lanes: ${esc(a.AffectedLanes||'—')} · ${esc(a.Status||'')} · ${esc(a.Severity||'')}<br>
+        Reported ${esc(a.ReportedAt)} · updated ${esc(a.DataLastUpdatedAt)} (local)</div></div>`, {maxWidth:380})
+      .bindTooltip(`${esc(a.EventTypeDesc||'Event')}: ${esc(a.Highway||'')}`, {direction:'top'})
+      .addTo(gRoads);
+  }
+  if (!$('roadStat').innerHTML.includes('warn'))
+    $('roadStat').innerHTML = `FDOT in area: <b>${nf}</b> flooding · <b>${nc}</b> closures · ${ROADS.length} total events`;
+}
+
+// ================================================================ layers / tabs
+function setLayer(on, layer){
+  if (!layer) return;
+  if (on && !map.hasLayer(layer)) layer.addTo(map);
+  if (!on && map.hasLayer(layer)) map.removeLayer(layer);
+}
+function syncLayers(){
+  const H = S.tab === 'hist', Lv = S.tab === 'live';
+  setLayer(H && $('lHeat').checked, heat);
+  setLayer(H && $('lSpots').checked, gSpots);
+  setLayer(H && $('lAbove').checked, gAbove);
+  setLayer(H && $('lUnk').checked, gUnk);
+  setLayer(H && $('lObs').checked, gObs);
+  setLayer(Lv && $('lLive').checked, gLive);
+  setLayer(Lv && $('lMrms').checked, qpeLayer);
+  const roadsOn = [...document.querySelectorAll(`#pane-${S.tab} .lRoads`)].some(x => x.checked);
+  setLayer(roadsOn, gRoads);
+  const baseOn = [...document.querySelectorAll(`#pane-${S.tab} .lBase`)].some(x => x.checked);
+  setLayer(baseOn, gBase);
+}
+function setTab(t){
+  S.tab = t;
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  $('pane-hist').classList.toggle('on', t === 'hist');
+  $('pane-live').classList.toggle('on', t === 'live');
+  try { history.replaceState(null, '', t === 'live' ? '#live' : '#history'); } catch(e) {}
+  map.closePopup();
+  if (t === 'live') renderLive(); else renderHist();
+  syncLayers();
+}
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+
+// keep paired checkboxes in step across tabs
+['lRoads','lBase'].forEach(cls => document.querySelectorAll('.'+cls).forEach(el => el.addEventListener('change', () => {
+  document.querySelectorAll('.'+cls).forEach(o => o.checked = el.checked); syncLayers();
+})));
+['lHeat','lSpots','lAbove','lUnk','lObs','lMrms','lLive'].forEach(id => $(id).addEventListener('change', syncLayers));
+$('lLiveBelow').addEventListener('change', () => { renderLive(); syncLayers(); });
+$('lRoadsAll').addEventListener('change', renderRoads);
+
+// ================================================================ click-anywhere
 map.on('click', e => {
   if (!DATA) return;
-  const D = DURS[S.di];
-  const near = spots.map(s => ({s, d:kmDist(e.latlng.lat, e.latlng.lng, s.lat, s.lon)}))
-    .filter(x => x.d <= 2).sort((a,b) => a.d - b.d).slice(0,8);
-  let html = `<div class="pp"><h3>${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}</h3>`;
+  const {lat, lng} = e.latlng;
+  let html = `<div class="pp"><h3>${lat.toFixed(4)}, ${lng.toFixed(4)}</h3>`;
+  if (S.tab === 'live'){
+    if (LIVE){
+      const at = liveAtCells(liveCellsFor(lat, lng));
+      html += `<div class="meta">MRMS ${S.lvSrc==='ro'?'radar-only':'multi-sensor'} · ${S.cell==='nb'?'max within 6 km':'this grid cell'}</div>
+        <table><tr><th></th>${LIVE_DURS.map(h=>`<th>${h}h</th>`).join('')}</tr><tr><td>now</td>${at.map(v=>`<td>${fmt(v)}</td>`).join('')}</tr></table>`;
+    } else html += `<div class="meta">No live MRMS loaded.</div>`;
+  }
+  const near = spots.map(s => ({s, d:kmDist(lat, lng, s.lat, s.lon)})).filter(x => x.d <= 2).sort((a,b) => a.d - b.d).slice(0,8);
   if (!near.length){
-    const n = spots.map(s => ({s, d:kmDist(e.latlng.lat, e.latlng.lng, s.lat, s.lon)})).sort((a,b)=>a.d-b.d)[0];
+    const n = spots.map(s => ({s, d:kmDist(lat, lng, s.lat, s.lon)})).sort((a,b)=>a.d-b.d)[0];
     html += `<div class="meta">No flood reports within 2 km${n?`; nearest hot spot is <b>${esc(n.s.name)}</b>, ${n.d.toFixed(1)} km away`:''}.
       No reports doesn't mean it doesn't flood, only that nobody reported it.</div>`;
-  } else {
+  } else if (S.tab === 'hist'){
+    const D = DURS[S.di];
     html += `<div class="meta">Hot spots within 2 km, ${S.th.toFixed(1)}" in ${D} h:</div><table>
       <tr><th>spot</th><th>km</th><th>${D}h trig</th><th></th></tr>` +
       near.map(({s,d}) => { const t = trigs(s)[S.di];
         return `<tr><td style="text-align:left;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</td>
           <td>${d.toFixed(1)}</td><td>${fmt(t)}</td>
           <td>${t==null?'?':(t<=S.th?'<b style="color:#f46d43">floods</b>':'no record')}</td></tr>`; }).join('') + '</table>';
+  } else {
+    html += `<div class="meta">Hot spots within 2 km:</div><table><tr><th>spot</th><th>km</th><th>status</th></tr>` +
+      near.map(({s,d}) => { const row = liveRows.find(r => r.s === s);
+        return `<tr><td style="text-align:left;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</td>
+          <td>${d.toFixed(1)}</td><td>${row?`<b style="color:${statusFor(row.ratio).c}">${Math.round(row.ratio*100)}%</b> (${row.h} h)`:'—'}</td></tr>`; }).join('') + '</table>';
   }
-  L.popup({maxWidth:420}).setLatLng(e.latlng).setContent(html + '</div>').openOn(map);
+  L.popup({maxWidth:440}).setLatLng(e.latlng).setContent(html + '</div>').openOn(map);
 });
 
-// ---------------------------------------------------------------- wiring
-function setLayer(id, layer){
-  const on = $(id).checked;
-  if (on && !map.hasLayer(layer)) layer.addTo(map);
-  if (!on && map.hasLayer(layer)) map.removeLayer(layer);
-}
-function syncLayers(){
-  setLayer('lHeat', heat); setLayer('lSpots', gSpots); setLayer('lAbove', gAbove);
-  setLayer('lUnk', gUnk); setLayer('lObs', gObs); setLayer('lBase', gBase);
-}
-['lHeat','lSpots','lAbove','lUnk','lObs','lBase'].forEach(id => $(id).addEventListener('change', syncLayers));
-
-function buildDurButtons(){
-  $('dur').innerHTML = DURS.map((h,i) => `<button data-i="${i}" class="${i===S.di?'on':''}">${h} h</button>`).join('');
-}
+// ================================================================ wiring
 $('dur').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   S.di = +b.dataset.i;
   [...$('dur').children].forEach(x => x.classList.toggle('on', x===b));
-  setSlider(); render();
+  setSlider(); renderHist();
 });
-$('th').addEventListener('input', e => { S.th = +e.target.value; render(); });
-$('cell').addEventListener('change', e => { S.cell = e.target.value; render(); });
-$('rad').addEventListener('change', e => { S.rad = +e.target.value; spots = buildSpots(); render(); });
+$('th').addEventListener('input', e => { S.th = +e.target.value; renderHist(); });
+document.querySelectorAll('.cellsel').forEach(el => el.addEventListener('change', () => {
+  S.cell = el.value; document.querySelectorAll('.cellsel').forEach(o => o.value = S.cell);
+  renderHist(); renderLive(); syncLayers();
+}));
+$('rad').addEventListener('change', e => { S.rad = +e.target.value; spots = buildSpots(); renderHist(); renderLive(); syncLayers(); });
 ['y0','y1'].forEach(id => $(id).addEventListener('change', () => {
   S.y0 = +$('y0').value; S.y1 = +$('y1').value;
   if (S.y0 > S.y1){ [S.y0,S.y1] = [S.y1,S.y0]; $('y0').value=S.y0; $('y1').value=S.y1; }
-  spots = buildSpots(); render();
+  spots = buildSpots(); renderHist(); renderLive(); syncLayers();
 }));
-$('list').addEventListener('click', e => {
-  const li = e.target.closest('li[data-i]'); if (!li) return;
-  const s = spots[+li.dataset.i];
-  map.flyTo([s.lat, s.lon], 15, {duration:0.8});
-  setTimeout(() => L.popup({maxWidth:440}).setLatLng([s.lat,s.lon]).setContent(spotHTML(s)).openOn(map), 850);
+$('lvSrc').addEventListener('change', e => { S.lvSrc = e.target.value; drawQPE(); renderLive(); syncLayers(); });
+$('lvDur').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  S.lvDur = +b.dataset.h; drawQPE(); renderLive(); syncLayers();
 });
+$('lvOp').addEventListener('input', e => { S.lvOp = +e.target.value; if (qpeLayer) qpeLayer.setOpacity(S.lvOp); });
+function flyToSpot(li){
+  const s = spots[+li.dataset.i]; if (!s) return;
+  map.flyTo([s.lat, s.lon], 15, {duration:0.8});
+  setTimeout(() => L.popup({maxWidth:460}).setLatLng([s.lat,s.lon]).setContent(spotHTML(s)).openOn(map), 850);
+}
+$('list').addEventListener('click', e => { const li = e.target.closest('li[data-i]'); if (li) flyToSpot(li); });
+$('lvList').addEventListener('click', e => { const li = e.target.closest('li[data-i]'); if (li) flyToSpot(li); });
 $('hide').onclick = () => { $('side').classList.add('hidden'); $('toggle').classList.add('show'); setTimeout(()=>map.invalidateSize(),250); };
 $('toggle').onclick = () => { $('side').classList.remove('hidden'); $('toggle').classList.remove('show'); setTimeout(()=>map.invalidateSize(),250); };
 
-// ---------------------------------------------------------------- load
-buildDurButtons(); setSlider(); legend();
+// ================================================================ load
+buildDurButtons(); setSlider(); renderLive();
 fetch('data/flood_hotspots.json', {cache:'no-cache'})
   .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
   .then(d => {
@@ -471,7 +797,8 @@ fetch('data/flood_hotspots.json', {cache:'no-cache'})
     $('y0').value = S.y0; $('y1').value = S.y1;
     $('gen').textContent = ` Built ${d.generated}; ${d.reports.length} flood reports, ${d.rain_obs.length} rain obs.`;
     spots = buildSpots();
-    syncLayers(); render();
+    renderHist(); renderLive();
+    setTab(location.hash === '#live' ? 'live' : 'hist');
   })
   .catch(err => {
     $('stat').textContent = 'No data loaded.';
@@ -481,6 +808,10 @@ fetch('data/flood_hotspots.json', {cache:'no-cache'})
       to generate <code>data/flood_hotspots.json</code>.</span>`;
     syncLayers();
   });
+loadLive(); loadRoads();
+setInterval(() => { loadLive(); loadRoads(); }, REFRESH_MS);
+window.addEventListener('hashchange', () => setTab(location.hash === '#live' ? 'live' : 'hist'));
+}
 </script>
 </body>
 </html>
