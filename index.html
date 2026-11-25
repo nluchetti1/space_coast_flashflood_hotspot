@@ -96,9 +96,9 @@
   .lbl{background:transparent;border:none;box-shadow:none;color:#fff;font:600 11px system-ui;
     text-shadow:0 0 3px #000,0 0 3px #000;white-space:nowrap}
   .lbl:before{display:none}
+  .mrms-px{image-rendering:pixelated}
   .road{width:18px;height:18px;transform:rotate(45deg);border:2px solid #fff;border-radius:3px;box-shadow:0 0 0 1px #0008}
   .road.flood{background:#1e88ff}.road.closed{background:#e53935}.road.other{background:#9aa5b1;width:12px;height:12px}
-  .mrms-img{image-rendering:pixelated}
   .leaflet-container{background:#0b0f14}
   @media (max-width:720px){
     #side{position:absolute;z-index:1001;height:100%;width:88vw;min-width:0}
@@ -223,7 +223,8 @@
           <div class="row"><label>Show</label>
             <div class="seg" id="lvDur"></div>
           </div>
-          <div class="row"><label>Opacity</label><input type="range" id="lvOp" min="0" max="1" step="0.05" value="0.65" style="margin:0"></div>
+          <div class="row"><label>Transparency</label><input type="range" id="lvTr" min="0" max="95" step="5" value="35" style="margin:0;flex:1"><span id="lvTrVal" style="font:12px var(--mono);width:36px;text-align:right">35%</span></div>
+          <label class="chk"><input type="checkbox" id="lvSmooth" checked> Smooth display (display only; spot comparisons use raw 1 km values)</label>
           <div class="qbar" id="qbar"></div><div class="qlab" id="qlab"></div>
           <div class="kv" id="lvValid" style="margin-top:10px"></div>
         </div>
@@ -315,7 +316,7 @@ const SITES = [
 ];
 
 const S = {tab:'hist', th:4, di:2, cell:'nb', y0:null, y1:null, rad:0.5,
-           lvSrc:'ro', lvDur:3, lvOp:0.65};
+           lvSrc:'ro', lvDur:3, lvOp:0.65, smooth:true};
 let DATA = null, spots = [], LIVE = null, ROADS = [], liveRows = [];
 
 // ================================================================ map
@@ -359,6 +360,13 @@ function kmDist(a, b, c, d){
 function ageMin(iso){ return iso ? (Date.now() - Date.parse(iso.replace('Z',':00Z')))/60000 : null; }
 function ageTxt(m){ if (m == null) return '—'; if (m < 90) return `${Math.round(m)} min ago`; return `${(m/60).toFixed(1)} h ago`; }
 function qpeColor(v){ let c = null; for (const [t,col] of QPE){ if (v >= t) c = col; else break; } return c; }
+
+// leaflet.heat 0.2.0 throws if redrawn while off the map, so only redraw when it's on
+function setHeat(pts, max){
+  heat.options.max = max;
+  if (map.hasLayer(heat)) { heat.setOptions({max}); heat.setLatLngs(pts); }
+  else heat._latlngs = pts;
+}
 
 // ================================================================ HISTORY
 const rv = (r, di = S.di, cell = S.cell) => r.s4?.[cell]?.[di] ?? null;
@@ -471,9 +479,7 @@ function renderHist(){
         .bindTooltip(`${esc(s.name)} · needs ${s.trig.toFixed(2)}" / ${D} h`, {direction:'top'}).addTo(gAbove);
     }
   }
-  const mx = Math.max(1, ...heatPts.map(p => p[2]));
-  heat.setOptions({max: mx*0.6});
-  heat.setLatLngs(heatPts);
+  setHeat(heatPts, Math.max(1, ...heatPts.map(p => p[2])) * 0.6);
 
   gObs.clearLayers();
   for (const o of DATA.rain_obs){
@@ -542,23 +548,54 @@ function liveAt(s){
 }
 function statusFor(ratio){ return STATUS.find(x => ratio >= x.min); }
 
+// light 1-2-1 smoothing (missing cells ignored), then bilinear upsampling for display
+function smoothGrid(v, nx, ny){
+  const out = new Float32Array(nx*ny);
+  const w = [1,2,1];
+  for (let r = 0; r < ny; r++) for (let c = 0; c < nx; c++){
+    let sum = 0, ws = 0;
+    for (let dr = -1; dr <= 1; dr++){ const rr = r+dr; if (rr < 0 || rr >= ny) continue;
+      for (let dc = -1; dc <= 1; dc++){ const cc = c+dc; if (cc < 0 || cc >= nx) continue;
+        const x = v[rr*nx+cc]; if (x < 0) continue;
+        const k = w[dr+1]*w[dc+1]; sum += x*k; ws += k; } }
+    out[r*nx+c] = ws ? sum/ws : -1;
+  }
+  return out;
+}
 function drawQPE(){
   if (qpeLayer){ map.removeLayer(qpeLayer); qpeLayer = null; }
   if (!LIVE) return;
-  const arr = LIVE[S.lvSrc]?.[String(S.lvDur)];
-  if (!arr) return;
-  const g = LIVE.grid, cv = document.createElement('canvas');
-  cv.width = g.nx; cv.height = g.ny;
-  const ctx = cv.getContext('2d'), img = ctx.createImageData(g.nx, g.ny);
-  for (let k = 0; k < arr.length; k++){
-    const v = arr[k]; if (v < 1) continue;
-    const c = qpeColor(v/100); if (!c) continue;
-    const n = parseInt(c.slice(1), 16);
-    img.data[k*4] = n>>16; img.data[k*4+1] = (n>>8)&255; img.data[k*4+2] = n&255; img.data[k*4+3] = 255;
+  const raw = LIVE[S.lvSrc]?.[String(S.lvDur)];
+  if (!raw) return;
+  const g = LIVE.grid;
+  const v = S.smooth ? smoothGrid(raw, g.nx, g.ny) : Float32Array.from(raw);
+  const U = S.smooth ? 8 : 1;                       // upsample factor
+  const W = g.nx*U, H = g.ny*U;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d'), img = ctx.createImageData(W, H);
+  const rgb = QPE.map(([t,c]) => { const n = parseInt(c.slice(1),16); return [t, n>>16, (n>>8)&255, n&255]; });
+  const at = (r, c) => v[Math.min(g.ny-1, Math.max(0, r))*g.nx + Math.min(g.nx-1, Math.max(0, c))];
+  for (let py = 0; py < H; py++){
+    const y = (py + 0.5)/U - 0.5, r0 = Math.floor(y), fy = y - r0;
+    for (let px = 0; px < W; px++){
+      const x = (px + 0.5)/U - 0.5, c0 = Math.floor(x), fx = x - c0;
+      let val;
+      if (U === 1) val = v[py*g.nx + px];
+      else {
+        const a = at(r0,c0), b = at(r0,c0+1), c = at(r0+1,c0), d = at(r0+1,c0+1);
+        if (a < 0 || b < 0 || c < 0 || d < 0){ val = Math.max(a,b,c,d) >= 0 ? at(Math.round(y), Math.round(x)) : -1; }
+        else val = (a*(1-fx) + b*fx)*(1-fy) + (c*(1-fx) + d*fx)*fy;
+      }
+      const inch = val/100;
+      if (!(inch >= QPE[0][0])) continue;
+      let k = 0; while (k+1 < rgb.length && inch >= rgb[k+1][0]) k++;
+      const o = (py*W + px)*4;
+      img.data[o] = rgb[k][1]; img.data[o+1] = rgb[k][2]; img.data[o+2] = rgb[k][3]; img.data[o+3] = 255;
+    }
   }
   ctx.putImageData(img, 0, 0);
   const b = [[g.lat_n - (g.ny-1)*g.dlat - g.dlat/2, g.lon_w - g.dlon/2], [g.lat_n + g.dlat/2, g.lon_w + (g.nx-1)*g.dlon + g.dlon/2]];
-  qpeLayer = L.imageOverlay(cv.toDataURL(), b, {opacity:S.lvOp, pane:'qpe', className:'mrms-img', interactive:false});
+  qpeLayer = L.imageOverlay(cv.toDataURL(), b, {opacity:S.lvOp, pane:'qpe', className: S.smooth ? '' : 'mrms-px', interactive:false});
   if (S.tab === 'live' && $('lMrms').checked) qpeLayer.addTo(map);
 }
 
@@ -674,7 +711,10 @@ function renderRoads(){
 // ================================================================ layers / tabs
 function setLayer(on, layer){
   if (!layer) return;
-  if (on && !map.hasLayer(layer)) layer.addTo(map);
+  if (on && !map.hasLayer(layer)){
+    layer.addTo(map);
+    if (layer === heat) heat.setOptions({max: heat.options.max});   // apply max set while hidden
+  }
   if (!on && map.hasLayer(layer)) map.removeLayer(layer);
 }
 function syncLayers(){
@@ -698,8 +738,8 @@ function setTab(t){
   $('pane-live').classList.toggle('on', t === 'live');
   try { history.replaceState(null, '', t === 'live' ? '#live' : '#history'); } catch(e) {}
   map.closePopup();
-  if (t === 'live') renderLive(); else renderHist();
-  syncLayers();
+  try { if (t === 'live') renderLive(); else renderHist(); }
+  finally { syncLayers(); }
 }
 document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
 
@@ -768,7 +808,12 @@ $('lvDur').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   S.lvDur = +b.dataset.h; drawQPE(); renderLive(); syncLayers();
 });
-$('lvOp').addEventListener('input', e => { S.lvOp = +e.target.value; if (qpeLayer) qpeLayer.setOpacity(S.lvOp); });
+$('lvTr').addEventListener('input', e => {
+  S.lvOp = 1 - (+e.target.value)/100;
+  $('lvTrVal').textContent = `${e.target.value}%`;
+  if (qpeLayer) qpeLayer.setOpacity(S.lvOp);
+});
+$('lvSmooth').addEventListener('change', e => { S.smooth = e.target.checked; drawQPE(); syncLayers(); });
 function flyToSpot(li){
   const s = spots[+li.dataset.i]; if (!s) return;
   map.flyTo([s.lat, s.lon], 15, {duration:0.8});
